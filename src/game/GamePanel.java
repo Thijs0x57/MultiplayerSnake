@@ -1,6 +1,5 @@
 package game;
 
-import Network.Callbacks.KeyPressReceived;
 import Network.Client;
 import Network.Server;
 import game.objects.*;
@@ -9,17 +8,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by Michel on 5-6-2017.
  */
 public class GamePanel extends JPanel implements ActionListener{
-    private ArrayList<GameObject> _gameObjects;
+    private CopyOnWriteArrayList<GameObject> _gameObjects;
 
     private Player _player;
     private Player _enemyPlayer;
@@ -32,24 +29,26 @@ public class GamePanel extends JPanel implements ActionListener{
 
     private Timer _gameLoopTimer;
 
+    private int _spawnAppleCounter;
+
     long lastLoopTime = System.currentTimeMillis();
 
     public GamePanel() {
         setBackground(Color.black);
         setFocusable(true);
 
-        _gameObjects = new ArrayList<>();
+        _gameObjects = new CopyOnWriteArrayList<>();
 
-        _player = new Player();
-        _enemyPlayer = new Player();
+        _player = new Player(new Point(40, 20));
+        _enemyPlayer = new Player(new Point(10, 10));
+        _enemyPlayer.getSnake().setDirection(Direction.LEFT);
 
         _gameObjects.add(_player.getSnake());
         _gameObjects.add(_enemyPlayer.getSnake());
 
         addKeyListener(new GameKeyAdapter(_player));
 
-        //control enemy snake
-        setEnemySnakeDir();
+        _spawnAppleCounter = 0;
 
         // Game speed
         _gameLoopTimer = new Timer(1000 / GameConstants.GAME_SPEED, this);
@@ -58,13 +57,36 @@ public class GamePanel extends JPanel implements ActionListener{
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D)g;
 
         Iterator<GameObject> it = _gameObjects.iterator();
         for(int i = 0; i < _gameObjects.size(); i++) {
             if(it.hasNext()) {
-                it.next().draw((Graphics2D)g);
+                GameObject go = it.next();
+
+                if(go instanceof Snake) {
+                    Snake snake = (Snake)go;
+
+                    if (snake.getPosition().x < 0) {
+                        snake.setPosition(new Point(getWidth(), snake.getPosition().y));
+                    } else if (snake.getPosition().x > getWidth()) {
+                        snake.setPosition(new Point(0, snake.getPosition().y));
+                    } else if (snake.getPosition().y < 0) {
+                        snake.setPosition(new Point(snake.getPosition().x, getHeight()));
+                    } else if (snake.getPosition().y > getHeight()) {
+                        snake.setPosition(new Point(snake.getPosition().x, 0));
+                    }
+                } else if(go instanceof Apple) {
+                    Apple apple = (Apple)go;
+                }
+
+                go.draw(g2d);
             }
         }
+
+        g2d.setColor(Color.white);
+        g2d.drawString("Your Lives: " + _player.getSnake().getBodyCount(), 10, 10);
+        g2d.drawString("Other Lives: " + _enemyPlayer.getSnake().getBodyCount(), 10, 20);
     }
 
     @Override
@@ -73,18 +95,59 @@ public class GamePanel extends JPanel implements ActionListener{
         repaint();
     }
 
-    public void update() {
-        Iterator<GameObject> it = _gameObjects.iterator();
+    public synchronized void update() {
+        if(_spawnAppleCounter < GameConstants.APPLE_SPAWN_RATE) {
+            _spawnAppleCounter++;
+        } else {
+            // https://stackoverflow.com/a/363692/3677161
+            int x = ThreadLocalRandom.current().nextInt(0, getWidth() + 1);
+            int y = ThreadLocalRandom.current().nextInt(0, getHeight() + 1);
+
+            _gameObjects.add(new Apple(new Point(x, y)));
+            _spawnAppleCounter = 0;
+        }
+
+        // Collision checking
+        Iterator<GameObject> itcc = _gameObjects.iterator();
         for(int i = 0; i < _gameObjects.size(); i++) {
-            if(it.hasNext()) {
-                it.next().update();
+            if(itcc.hasNext()) {
+                GameObject go = itcc.next();
+
+                if(go instanceof Snake) {
+                    checkCollision(go);
+                }
+            }
+        }
+
+        // Update game objects
+        Iterator<GameObject> itup = _gameObjects.iterator();
+        for(int i = 0; i < _gameObjects.size(); i++) {
+            if(itup.hasNext()) {
+                itup.next().update();
             }
         }
     }
 
+    public void checkCollision(GameObject gameObject) {
+        Iterator<GameObject> itgo = _gameObjects.iterator();
+        for (int i = 0; i < _gameObjects.size(); i++) {
+            if (itgo.hasNext()) {
+                GameObject go = itgo.next();
 
-    public void setEnemySnakeDir()
-    {
-        //_server.onKeyPressReceived(key -> _enemySnake.setDirection(Direction.UP));
+                if(gameObject instanceof Snake && go instanceof Apple) {
+                    if (gameObject.hasCollision(go)) {
+                        _gameObjects.remove(go);
+                        ((Snake) gameObject).addBodyElement();
+                    }
+                } else if(gameObject instanceof Snake && go instanceof Snake) {
+                    if(gameObject.hasCollision(go)) {
+                        if(!((Snake) gameObject).isProtected()) {
+                            ((Snake) gameObject).removeBodyElement();
+                            ((Snake) gameObject).setIsProtected();
+                        }
+                    }
+                }
+            }
+        }
     }
 }

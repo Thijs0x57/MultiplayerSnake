@@ -1,7 +1,8 @@
 package game.objects;
 
+import game.GameConstants;
+
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -13,7 +14,13 @@ public class Snake extends GameObject {
     private Point _snakePosition;
     private Direction _snakeDirection;
 
-    public Snake(Point startPostion, int startTailSize) {
+    private Player _ownerPlayer;
+
+    private int _protectedCounter;
+
+    public Snake(Player player, Point startPostion, int startTailSize) {
+        _ownerPlayer = player;
+
         _snakeBody = new LinkedList<>();
         _snakePosition = startPostion;
         _snakeDirection = Direction.NONE;
@@ -21,10 +28,12 @@ public class Snake extends GameObject {
         for (int i = 0; i < startTailSize + 1; i++) {
             _snakeBody.add(new SnakeBodyElement(startPostion.x, startPostion.y + (i * GameConstants.SNAKE_ELEMENT_SIZE) ));
         }
+
+        _protectedCounter = GameConstants.PROTECTION_TIMER;
     }
 
-    public Snake(Point startPosition) {
-        this(startPosition, 0);
+    public Snake(Player player, Point startPosition) {
+        this(player, startPosition, 5);
     }
 
     @Override
@@ -35,7 +44,12 @@ public class Snake extends GameObject {
                 if (i == 0) {
                     g.setColor(GameConstants.SNAKE_HEAD_COLOR);
                 } else {
-                    g.setColor(GameConstants.SNAKE_ELEMENT_COLOR);
+                    if(isProtected() && (_protectedCounter % 2 == 0)) {
+                        g.setColor(GameConstants.PROTECTION_COLOR);
+                    } else {
+                        g.setColor(GameConstants.SNAKE_ELEMENT_COLOR);
+                    }
+
                 }
 
                 SnakeBodyElement e = it.next();
@@ -49,6 +63,10 @@ public class Snake extends GameObject {
 
     @Override
     public void update() {
+        if(_protectedCounter > 0) {
+            _protectedCounter--;
+        }
+
         _snakeBody.removeLast();
 
         SnakeBodyElement newBodyElement = new SnakeBodyElement(_snakePosition.x, _snakePosition.y);
@@ -75,20 +93,7 @@ public class Snake extends GameObject {
                 break;
         }
 
-
         _snakeBody.push(newBodyElement);
-    }
-
-    @Override
-    public boolean canCollide() {
-        return true;
-    }
-
-    @Override
-    public void onCollision() {
-        if(canCollide()) {
-
-        }
     }
 
     public void setDirection(Direction newDirection) {
@@ -103,5 +108,79 @@ public class Snake extends GameObject {
         } else {
             _snakeDirection = newDirection;
         }
+    }
+
+    @Override
+    public void setPosition(Point newPosition) {
+        _snakePosition = newPosition;
+    }
+
+    @Override
+    public Point getPosition() {
+        return _snakePosition;
+    }
+
+    /**
+     *
+     * @return Bounds of the head
+     */
+    @Override
+    public Rectangle getBounds() {
+        return new Rectangle(_snakeBody.get(0).x, _snakeBody.get(0).y, GameConstants.SNAKE_ELEMENT_SIZE, GameConstants.SNAKE_ELEMENT_SIZE);
+    }
+
+    public void addBodyElement() {
+        _snakeBody.push(new SnakeBodyElement(_snakePosition.x, _snakePosition.y));
+    }
+
+    public void removeBodyElement() {
+        _snakeBody.removeLast();
+    }
+
+    @Override
+    public boolean hasCollision(GameObject otherGameObject) {
+        if(otherGameObject instanceof Snake && otherGameObject != this) {
+            Rectangle headBounds = _snakeBody.get(0).getBounds();
+            Rectangle otherSnakeHeadBounds = otherGameObject.getBounds();
+
+            if (headBounds.intersects(otherSnakeHeadBounds)) {
+                return true;
+            } else {
+                for(SnakeBodyElement sbe : ((Snake) otherGameObject)._snakeBody) {
+                    if(headBounds.intersects(sbe.getBounds())) {
+                        return true;
+                    }
+                }
+            }
+//        } else if (otherGameObject instanceof Snake) {
+//            Rectangle headBounds = _snakeBody.get(0).getBounds();
+//
+//            for (int i = 1; i < _snakeBody.size(); i++) {
+//                if(headBounds.intersects(_snakeBody.get(0).getBounds())) {
+//                    return true;
+//                }
+//            }
+        } else if (otherGameObject instanceof Apple) {
+            Rectangle headBounds = _snakeBody.get(0).getBounds();
+            Rectangle appleBounds = otherGameObject.getBounds();
+
+            if(headBounds.intersects(appleBounds)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean isProtected() {
+        return _protectedCounter > 0;
+    }
+
+    public void setIsProtected() {
+        _protectedCounter = GameConstants.PROTECTION_TIMER;
+    }
+
+    public int getBodyCount() {
+        return _snakeBody.size();
     }
 }
