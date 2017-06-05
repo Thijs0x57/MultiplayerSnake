@@ -29,8 +29,8 @@ public class Apple extends GameObject {
         return _applePosition;
     }
 
-
-    private Rectangle getBounds() {
+    @Override
+    public Rectangle getBounds() {
         return new Rectangle(_applePosition.x, _applePosition.y, GameConstants.GRID_ELEMENT_SIZE, GameConstants.GRID_ELEMENT_SIZE);
     }
 
@@ -43,5 +43,10 @@ public class Apple extends GameObject {
         }
 
         return false;
+    }
+
+    @Override
+    public void setPosition(Point newPosition) {
+
     }
 }

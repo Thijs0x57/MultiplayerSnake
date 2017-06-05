@@ -11,13 +11,12 @@ public class Main
     public static void main(String[] args) {
         JFrame frame = new JFrame("Multiplayer Snake");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setContentPane(new GamePanel());
+        frame.setContentPane(new GamePanel(args));
         frame.setMinimumSize(new Dimension(800, 608));
         frame.setMaximumSize(new Dimension(800, 608));
         frame.setResizable(false);
 
         frame.pack();
         frame.setVisible(true);
-
     }
 }

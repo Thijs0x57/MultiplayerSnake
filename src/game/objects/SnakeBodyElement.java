@@ -1,5 +1,7 @@
 package game.objects;
 
+import game.GameConstants;
+
 import java.awt.*;
 
 /**

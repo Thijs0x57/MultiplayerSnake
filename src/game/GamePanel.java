@@ -1,6 +1,7 @@
 package game;
 
 import Network.Client;
+import Network.MessageType;
 import Network.Server;
 import game.objects.*;
 
@@ -8,9 +9,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -23,11 +25,11 @@ public class GamePanel extends JPanel implements ActionListener{
     private Player _player;
     private Player _enemyPlayer;
 
-    private Snake _enemySnake;
-    private Snake _snake;
+    private Server _snakeServer;
+    private Client _snakeClient;
 
-    private Server _server;
-    private Client _client;
+    private boolean _isHost;
+    private boolean _isClient;
 
     private Timer _gameLoopTimer;
 
@@ -35,26 +37,83 @@ public class GamePanel extends JPanel implements ActionListener{
 
     long lastLoopTime = System.currentTimeMillis();
 
-    public GamePanel() {
+    public GamePanel(String[] startupArgs) {
         setBackground(Color.black);
         setFocusable(true);
 
-        _gameObjects = new CopyOnWriteArrayList<>();
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                try {
+                    Snake snake = _player.getSnake();
 
-        _player = new Player(new Point(40, 20));
-        _enemyPlayer = new Player(new Point(10, 10));
-        _enemyPlayer.getSnake().setDirection(Direction.LEFT);
+                    if (snake != null) {
+                        switch (e.getKeyCode()) {
+                            case KeyEvent.VK_UP:
+                                snake.setDirection(Direction.UP);
 
-        _gameObjects.add(_player.getSnake());
-        _gameObjects.add(_enemyPlayer.getSnake());
+                                if (_isHost) {
+                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.UP.ordinal());
+                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
+                                } else if (_isClient) {
+                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.UP.ordinal());
+                                }
+                                break;
+                            case KeyEvent.VK_DOWN:
+                                snake.setDirection(Direction.DOWN);
 
-        addKeyListener(new GameKeyAdapter(_player));
+                                if (_isHost) {
+                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.DOWN.ordinal());
+                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
+                                } else if (_isClient) {
+                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.DOWN.ordinal());
+                                }
+                                break;
+                            case KeyEvent.VK_LEFT:
+                                snake.setDirection(Direction.LEFT);
 
-        _spawnAppleCounter = 0;
+                                if (_isHost) {
+                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.LEFT.ordinal());
+                                } else if (_isClient) {
+                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.LEFT.ordinal());
+                                }
+                                break;
+                            case KeyEvent.VK_RIGHT:
+                                snake.setDirection(Direction.RIGHT);
 
-        // Game speed
-        _gameLoopTimer = new Timer(1000 / GameConstants.GAME_SPEED, this);
-        _gameLoopTimer.start();
+                                if (_isHost) {
+                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.RIGHT.ordinal());
+                                } else if (_isClient) {
+                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.RIGHT.ordinal());
+                                }
+                                break;
+                        }
+                    }
+
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+
+        try {
+            if (startupArgs.length > 0) {
+                if (startupArgs[0].equals("client")) {
+                    // 1st argument: address (String)
+                    // 2nd argument: port (int)
+                    joinGame(Integer.parseInt(startupArgs[1]), startupArgs[2]);
+                }
+
+                if (startupArgs[0].equals("server")) {
+                    hostGame(Integer.parseInt(startupArgs[1]));
+                }
+            }
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        initGame();
     }
 
     public void paintComponent(Graphics g) {
@@ -98,15 +157,23 @@ public class GamePanel extends JPanel implements ActionListener{
     }
 
     public synchronized void update() {
-        if(_spawnAppleCounter < GameConstants.APPLE_SPAWN_RATE) {
-            _spawnAppleCounter++;
-        } else {
-            // https://stackoverflow.com/a/363692/3677161
-            int x = ThreadLocalRandom.current().nextInt(0, getWidth() + 1);
-            int y = ThreadLocalRandom.current().nextInt(0, getHeight() + 1);
+        if(_isHost) {
+            if (_spawnAppleCounter < GameConstants.APPLE_SPAWN_RATE) {
+                _spawnAppleCounter++;
+            } else {
+                // https://stackoverflow.com/a/363692/3677161
+                int x = ThreadLocalRandom.current().nextInt(0, getWidth() + 1);
+                int y = ThreadLocalRandom.current().nextInt(0, getHeight() + 1);
 
-            _gameObjects.add(new Apple(new Point(x, y)));
-            _spawnAppleCounter = 0;
+                _gameObjects.add(new Apple(new Point(x, y)));
+                _spawnAppleCounter = 0;
+
+                try {
+                    _snakeServer.sendMessage(MessageType.APPLE_SPAWN, x + ":" + y);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         // Collision checking
@@ -128,6 +195,17 @@ public class GamePanel extends JPanel implements ActionListener{
                 itup.next().update();
             }
         }
+
+        try {
+        if(_isHost)
+            if(_snakeServer != null && _player != null)
+                _snakeServer.sendMessage(MessageType.POSITION, _player.getSnake().getPosition().x + ":" + _player.getSnake().getPosition().y);
+        else if (_isClient)
+            if(_snakeClient != null && _player != null)
+                _snakeServer.sendMessage(MessageType.POSITION, _player.getSnake().getPosition().x + ":" + _player.getSnake().getPosition().y);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void checkCollision(GameObject gameObject) {
@@ -136,14 +214,14 @@ public class GamePanel extends JPanel implements ActionListener{
             if (itgo.hasNext()) {
                 GameObject go = itgo.next();
 
-                if(gameObject instanceof Snake && go instanceof Apple) {
+                if (gameObject instanceof Snake && go instanceof Apple) {
                     if (gameObject.hasCollision(go)) {
                         _gameObjects.remove(go);
                         ((Snake) gameObject).addBodyElement();
                     }
-                } else if(gameObject instanceof Snake && go instanceof Snake) {
-                    if(gameObject.hasCollision(go)) {
-                        if(!((Snake) gameObject).isProtected()) {
+                } else if (gameObject instanceof Snake && go instanceof Snake) {
+                    if (gameObject.hasCollision(go)) {
+                        if (!((Snake) gameObject).isProtected()) {
                             ((Snake) gameObject).removeBodyElement();
                             ((Snake) gameObject).setIsProtected();
                         }
@@ -153,33 +231,78 @@ public class GamePanel extends JPanel implements ActionListener{
         }
     }
 
-    public Player get_player()
-    {
-        return _player;
+    public void hostGame(int port) throws IOException {
+        _snakeServer = new Server(port);
+        _snakeServer.start();
+        _snakeServer.onKeyPressReceived(key -> {
+            Direction direction = Direction.values()[key];
+            handleEnemyDirection(direction);
+        });
+        _snakeServer.onPositionChanged(position -> {
+            _enemyPlayer.getSnake().setPosition(position);
+        });
+
+        _isHost = true;
     }
 
-    public Player get_enemyPlayer()
-    {
-        return _enemyPlayer;
+    public void joinGame(int port, String address) throws IOException {
+        _snakeClient = new Client(address, port);
+        _snakeClient.start();
+        _snakeClient.onKeyPressReceived(key -> {
+            Direction direction = Direction.values()[key];
+            handleEnemyDirection(direction);
+        });
+        _snakeClient.onPositionChanged(position -> {
+            _enemyPlayer.getSnake().setPosition(position);
+        });
+        _snakeClient.onAppleSpawned((x, y) -> {
+            _gameObjects.add(new Apple(new Point(x, y)));
+        });
+
+        _isClient = true;
     }
 
-    public Snake get_enemySnake()
-    {
-        return _enemySnake;
+    public void initGame() {
+        _gameObjects = new CopyOnWriteArrayList<>();
+
+        Point hostSpawn = new Point(40, 17);
+        Point clientSpawn = new Point(9, 17);
+
+        if(_isHost) {
+            _player = new Player(hostSpawn);
+            _enemyPlayer = new Player(clientSpawn);
+        }
+
+        if(_isClient) {
+            _player = new Player(clientSpawn);
+            _enemyPlayer = new Player(hostSpawn);
+        }
+
+        _gameObjects.add(_player.getSnake());
+        _gameObjects.add(_enemyPlayer.getSnake());
+
+        _spawnAppleCounter = 0;
+
+        // Game speed
+        _gameLoopTimer = new Timer(1000 / GameConstants.GAME_SPEED, this);
+        _gameLoopTimer.start();
     }
 
-    public Snake get_snake()
-    {
-        return _snake;
-    }
-
-    public Server get_server()
-    {
-        return _server;
-    }
-
-    public Client get_client()
-    {
-        return _client;
+    private void handleEnemyDirection(Direction direction) {
+        switch (direction)
+        {
+            case UP:
+                _enemyPlayer.getSnake().setDirection(direction);
+                break;
+            case DOWN:
+                _enemyPlayer.getSnake().setDirection(direction);
+                break;
+            case LEFT:
+                _enemyPlayer.getSnake().setDirection(direction);
+                break;
+            case RIGHT:
+                _enemyPlayer.getSnake().setDirection(direction);
+                break;
+        }
     }
 }

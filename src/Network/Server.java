@@ -2,6 +2,7 @@ package Network;
 
 import Network.Callbacks.*;
 
+import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -25,11 +26,11 @@ public class Server {
 
     private int _serverPort;
 
+    private KeyPressReceived _keyPressReceived;
+    private PositionChangedReceived _positionChangedReceived;
+
     private AppleRemoveReceived _appleRemoveReceived;
     private AppleSpawnReceived _appleSpawnReceived;
-    private KeyPressReceived _keyPressReceived;
-    private MessageReceived _messageReceived;
-    private SnakeLengthReceived _snakeLengthReceived;
 
     public int maxConnections = 1;
 
@@ -61,21 +62,14 @@ public class Server {
                     MessageType messageType = MessageType.values()[_serverDataInputStream.read()];
 
                     switch(messageType) {
-                        // text chat message
-                        case CHATMESSAGE:
-                            _messageReceived.onMessageReceived(_serverDataInputStream.readUTF());
-                            break;
-                        case SNAKE_LENGTH:
-                            _snakeLengthReceived.onSnakeLengthReceived(_serverDataInputStream.readInt());
-                            break;
-                        case APPLE_SPAWN:
-                            _appleSpawnReceived.onAppleSpawnReceived(_serverDataInputStream.readInt(), _serverDataInputStream.readInt());
-                            break;
-                        case APPLE_REMOVE:
-                            _appleRemoveReceived.onAppleRemoveReceived(_serverDataInputStream.readInt(), _serverDataInputStream.readInt());
-                            break;
                         case KEYS:
                             _keyPressReceived.onKeyPressReceived(_serverDataInputStream.readInt());
+                            break;
+                        case POSITION:
+                            String data = _serverDataInputStream.readUTF();
+                            int x = Integer.parseInt(data.split(":")[0]);
+                            int y = Integer.parseInt(data.split(":")[1]);
+                            _positionChangedReceived.onPositionChanged(new Point(x, y));
                             break;
                     }
                 }
@@ -88,36 +82,30 @@ public class Server {
     }
 
     public void sendMessage(MessageType messageType, String message) throws IOException {
-        _serverDataOutputStream.writeByte(messageType.ordinal());
-        _serverDataOutputStream.writeUTF(message);
-        _serverDataOutputStream.flush();
+        if(_serverDataOutputStream != null) {
+            _serverDataOutputStream.writeByte(messageType.ordinal());
+            _serverDataOutputStream.writeUTF(message);
+            _serverDataOutputStream.flush();
+        }
     }
 
     public void sendMessageInt(MessageType messageType, int message) throws IOException{
-        _serverDataOutputStream.writeByte(messageType.ordinal());
-        _serverDataOutputStream.writeInt(message);
-        _serverDataOutputStream.flush();
+        if(_serverDataOutputStream != null) {
+            _serverDataOutputStream.writeByte(messageType.ordinal());
+            _serverDataOutputStream.writeInt(message);
+            _serverDataOutputStream.flush();
+        }
     }
 
     public void send(MessageType messageType, Object data) throws IOException {
         switch (messageType) {
-            case CHATMESSAGE:
-                sendMessage(messageType, (String)data);
-                break;
-            case APPLE_SPAWN:
-                sendMessageInt(messageType, (int)data);
-                break;
-            case APPLE_REMOVE:
-                sendMessageInt(messageType, (int)data);
-                break;
-            case SNAKE_LENGTH:
-                sendMessageInt(messageType, (int)data);
-                break;
             case KEYS:
                 sendMessageInt(messageType, (int)data);
                 break;
+            case POSITION:
+                sendMessage(messageType, (String)data);
+                break;
         }
-        _serverDataOutputStream.flush();
     }
 
     public InetAddress getHost() {
@@ -126,11 +114,6 @@ public class Server {
         }
 
         return null;
-    }
-
-    public void onMessageReceived(MessageReceived messageReceived)
-    {
-        _messageReceived = messageReceived;
     }
 
     public void onAppleSpawnReceived(AppleSpawnReceived appleSpawnReceived)
@@ -148,8 +131,7 @@ public class Server {
         _keyPressReceived = keyPressReceived;
     }
 
-    public void onSnakeLengthReceived(SnakeLengthReceived snakeLengthReceived)
-    {
-        _snakeLengthReceived = snakeLengthReceived;
+    public void onPositionChanged(PositionChangedReceived positionChangedReceived) {
+        _positionChangedReceived = positionChangedReceived;
     }
 }
