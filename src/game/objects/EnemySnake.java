@@ -6,20 +6,20 @@ import java.util.ArrayList;
 /**
  * Created by Michel on 5-6-2017.
  */
-public class Snake extends GameObject {
+public class EnemySnake extends GameObject {
     private int _tailSize;
     private ArrayList<SnakeTailElement> _snakeTail;
     private Point _snakePosition;
     private Direction _snakeDirection;
 
-    public Snake(Point startPostion, int startTailSize) {
+    public EnemySnake(Point startPostion, int startTailSize) {
         _tailSize = startTailSize;
         _snakeTail = new ArrayList<>();
         _snakePosition = startPostion;
         _snakeDirection = Direction.LEFT;
     }
 
-    public Snake(Point startPosition) {
+    public EnemySnake(Point startPosition) {
         this(startPosition, 0);
     }
 
