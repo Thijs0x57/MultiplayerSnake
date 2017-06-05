@@ -145,4 +145,34 @@ public class GamePanel extends JPanel implements ActionListener{
             }
         }
     }
+
+    public Player get_player()
+    {
+        return _player;
+    }
+
+    public Player get_enemyPlayer()
+    {
+        return _enemyPlayer;
+    }
+
+    public Snake get_enemySnake()
+    {
+        return _enemySnake;
+    }
+
+    public Snake get_snake()
+    {
+        return _snake;
+    }
+
+    public Server get_server()
+    {
+        return _server;
+    }
+
+    public Client get_client()
+    {
+        return _client;
+    }
 }

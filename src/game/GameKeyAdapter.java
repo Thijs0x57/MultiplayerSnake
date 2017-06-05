@@ -1,5 +1,7 @@
 package game;
 
+import Network.Client;
+import Network.NetworkPanel;
 import game.objects.*;
 
 import java.awt.event.KeyAdapter;
@@ -10,6 +12,7 @@ import java.awt.event.KeyEvent;
  */
 public class GameKeyAdapter extends KeyAdapter {
     private Player _player;
+    private NetworkPanel networkPanel;
 
     public GameKeyAdapter(Player player) {
         _player = player;
@@ -25,6 +28,7 @@ public class GameKeyAdapter extends KeyAdapter {
             {
                 case KeyEvent.VK_UP:
                     snake.setDirection(Direction.UP);
+
                     break;
                 case KeyEvent.VK_DOWN:
                     snake.setDirection(Direction.DOWN);
