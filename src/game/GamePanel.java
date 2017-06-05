@@ -41,8 +41,8 @@ public class GamePanel extends JPanel implements ActionListener{
 
         _gameObjects = new CopyOnWriteArrayList<>();
 
-        _player = new Player();
-        _enemyPlayer = new Player();
+        _player = new Player(new Point(40, 20));
+        _enemyPlayer = new Player(new Point(10, 10));
         _enemyPlayer.getSnake().setDirection(Direction.LEFT);
 
         _gameObjects.add(_player.getSnake());
@@ -85,6 +85,10 @@ public class GamePanel extends JPanel implements ActionListener{
                 go.draw(g2d);
             }
         }
+
+        g2d.setColor(Color.white);
+        g2d.drawString("Your Lives: " + _player.getSnake().getBodyCount(), 10, 10);
+        g2d.drawString("Other Lives: " + _enemyPlayer.getSnake().getBodyCount(), 10, 20);
     }
 
     @Override
@@ -139,7 +143,10 @@ public class GamePanel extends JPanel implements ActionListener{
                     }
                 } else if(gameObject instanceof Snake && go instanceof Snake) {
                     if(gameObject.hasCollision(go)) {
-                        ((Snake)gameObject).removeBodyElement();
+                        if(!((Snake) gameObject).isProtected()) {
+                            ((Snake) gameObject).removeBodyElement();
+                            ((Snake) gameObject).setIsProtected();
+                        }
                     }
                 }
             }

@@ -10,5 +10,7 @@ import java.awt.*;
  */
 public abstract class GameObject implements Drawable, Updatable {
     public abstract boolean hasCollision(GameObject otherGameObject);
+    public abstract void setPosition(Point newPosition);
     public abstract Point getPosition();
+    public abstract Rectangle getBounds();
 }
