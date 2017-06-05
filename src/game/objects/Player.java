@@ -9,7 +9,7 @@ public class Player {
     private Snake _snake;
 
     public Player() {
-        _snake = new Snake(new Point(40 * GameConstants.SNAKE_ELEMENT_SIZE, 20 * GameConstants.SNAKE_ELEMENT_SIZE));
+        _snake = new Snake(new Point(40 * GameConstants.SNAKE_ELEMENT_SIZE, 20 * GameConstants.SNAKE_ELEMENT_SIZE), 5);
     }
 
     public Snake getSnake() {

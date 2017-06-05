@@ -37,6 +37,9 @@ public class GameKeyAdapter extends KeyAdapter {
                 case KeyEvent.VK_RIGHT:
                     snake.setDirection(Direction.RIGHT);
                     break;
+                case KeyEvent.VK_SPACE:
+                    snake.setDirection(Direction.NONE);
+                    break;
             }
         }
     }
