@@ -1,5 +1,8 @@
 package game;
 
+import Network.Callbacks.KeyPressReceived;
+import Network.Client;
+import Network.Server;
 import game.objects.*;
 
 import javax.swing.*;
@@ -8,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -18,6 +22,13 @@ public class GamePanel extends JPanel implements ActionListener{
     private ArrayList<GameObject> _gameObjects;
 
     private Player _player;
+    private EnemyPlayer _enemyPlayer;
+
+    private EnemySnake _enemySnake = _enemyPlayer.getSnake();
+    private Snake _snake = _player.getSnake();
+
+    private Server _server;
+    private Client _client;
 
     private Timer _gameLoopTimer;
 
@@ -30,10 +41,15 @@ public class GamePanel extends JPanel implements ActionListener{
         _gameObjects = new ArrayList<>();
 
         _player = new Player();
+        _enemyPlayer = new EnemyPlayer();
 
         _gameObjects.add(_player.getSnake());
+        _gameObjects.add(_enemyPlayer.getSnake());
 
-        addKeyListener(new GameKeyAdapter(_player));
+        addKeyListener(new GameKeyAdapter(_player, _enemyPlayer));
+
+        //control enemy snake
+        setEnemySnakeDir();
 
         // Game speed
         _gameLoopTimer = new Timer(1000 / GameConstants.GAME_SPEED, this);
@@ -66,6 +82,12 @@ public class GamePanel extends JPanel implements ActionListener{
                 it.next().update();
             }
         }
+    }
+
+
+    public void setEnemySnakeDir()
+    {
+        _server.onKeyPressReceived(key -> _enemySnake.setDirection(Direction.UP));
     }
 
 
