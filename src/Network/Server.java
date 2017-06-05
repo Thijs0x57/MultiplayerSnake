@@ -50,7 +50,6 @@ public class Server {
                     _serverDataInputStream = new DataInputStream(newConnection.getInputStream());
                     _serverDataOutputStream = new DataOutputStream(newConnection.getOutputStream());
 
-
                     _connectedSockets.add(newConnection);
                 }
 
