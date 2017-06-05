@@ -22,10 +22,10 @@ public class GamePanel extends JPanel implements ActionListener{
     private ArrayList<GameObject> _gameObjects;
 
     private Player _player;
-    private EnemyPlayer _enemyPlayer;
+    private Player _enemyPlayer;
 
-    private EnemySnake _enemySnake = _enemyPlayer.getSnake();
-    private Snake _snake = _player.getSnake();
+    private Snake _enemySnake;
+    private Snake _snake;
 
     private Server _server;
     private Client _client;
@@ -41,12 +41,12 @@ public class GamePanel extends JPanel implements ActionListener{
         _gameObjects = new ArrayList<>();
 
         _player = new Player();
-        _enemyPlayer = new EnemyPlayer();
+        _enemyPlayer = new Player();
 
         _gameObjects.add(_player.getSnake());
         _gameObjects.add(_enemyPlayer.getSnake());
 
-        addKeyListener(new GameKeyAdapter(_player, _enemyPlayer));
+        addKeyListener(new GameKeyAdapter(_player));
 
         //control enemy snake
         setEnemySnakeDir();
@@ -69,8 +69,6 @@ public class GamePanel extends JPanel implements ActionListener{
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
-
         update();
         repaint();
     }
@@ -87,9 +85,6 @@ public class GamePanel extends JPanel implements ActionListener{
 
     public void setEnemySnakeDir()
     {
-        _server.onKeyPressReceived(key -> _enemySnake.setDirection(Direction.UP));
+        //_server.onKeyPressReceived(key -> _enemySnake.setDirection(Direction.UP));
     }
-
-
-
 }
