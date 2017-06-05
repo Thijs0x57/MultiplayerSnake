@@ -3,7 +3,8 @@
  */
 public class Main
 {
-    public static void main(String[] args) {
-        new DamFrame(args);
+    public static void main(String[] args)
+    {
+
     }
 }
