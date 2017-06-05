@@ -1,4 +1,4 @@
-package game.objects;
+package game;
 
 import java.awt.Color;
 
@@ -14,5 +14,7 @@ public class GameConstants {
     public static Color SNAKE_ELEMENT_COLOR = Color.GREEN;
     public static Color APPLE_COLOR = Color.RED;
 
-    public static int GAME_SPEED = 10;
+    public static int GAME_SPEED = 15;
+
+    public static int APPLE_SPAWN_RATE = 65;
 }

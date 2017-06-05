@@ -1,5 +1,7 @@
 package game.objects;
 
+import game.GameConstants;
+
 import java.awt.*;
 
 /**
@@ -9,7 +11,7 @@ public class Player {
     private Snake _snake;
 
     public Player() {
-        _snake = new Snake(new Point(40 * GameConstants.SNAKE_ELEMENT_SIZE, 20 * GameConstants.SNAKE_ELEMENT_SIZE), 5);
+        _snake = new Snake(this, new Point(40 * GameConstants.SNAKE_ELEMENT_SIZE, 20 * GameConstants.SNAKE_ELEMENT_SIZE), 5);
     }
 
     public Snake getSnake() {

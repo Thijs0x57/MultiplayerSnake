@@ -1,7 +1,8 @@
 package game.objects;
 
+import game.GameConstants;
+
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -13,7 +14,11 @@ public class Snake extends GameObject {
     private Point _snakePosition;
     private Direction _snakeDirection;
 
-    public Snake(Point startPostion, int startTailSize) {
+    private Player _ownerPlayer;
+
+    public Snake(Player player, Point startPostion, int startTailSize) {
+        _ownerPlayer = player;
+
         _snakeBody = new LinkedList<>();
         _snakePosition = startPostion;
         _snakeDirection = Direction.NONE;
@@ -23,8 +28,8 @@ public class Snake extends GameObject {
         }
     }
 
-    public Snake(Point startPosition) {
-        this(startPosition, 0);
+    public Snake(Player player, Point startPosition) {
+        this(player, startPosition, 5);
     }
 
     @Override
@@ -75,20 +80,7 @@ public class Snake extends GameObject {
                 break;
         }
 
-
         _snakeBody.push(newBodyElement);
-    }
-
-    @Override
-    public boolean canCollide() {
-        return true;
-    }
-
-    @Override
-    public void onCollision() {
-        if(canCollide()) {
-
-        }
     }
 
     public void setDirection(Direction newDirection) {
@@ -103,5 +95,41 @@ public class Snake extends GameObject {
         } else {
             _snakeDirection = newDirection;
         }
+    }
+
+    public void setPosition(Point newPosition) {
+        _snakePosition = newPosition;
+    }
+
+    @Override
+    public Point getPosition() {
+        return _snakePosition;
+    }
+
+    public void addBodyElement() {
+        _snakeBody.push(new SnakeBodyElement(_snakePosition.x, _snakePosition.y));
+    }
+
+    public void removeBodyElement() {
+        _snakeBody.removeLast();
+    }
+
+    @Override
+    public boolean hasCollision(GameObject otherGameObject) {
+        if (otherGameObject instanceof Apple) {
+            Rectangle bounds = getBounds(_snakeBody.get(0));
+            Rectangle appleBounds = getBounds(otherGameObject);
+
+            if(bounds.intersects(appleBounds)) {
+                System.out.println("Apple collision!");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Rectangle getBounds(GameObject otherGameObject) {
+        return new Rectangle(otherGameObject.getPosition().x, otherGameObject.getPosition().y, GameConstants.SNAKE_ELEMENT_SIZE, GameConstants.SNAKE_ELEMENT_SIZE);
     }
 }
