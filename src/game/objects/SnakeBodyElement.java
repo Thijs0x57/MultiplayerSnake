@@ -30,7 +30,17 @@ public class SnakeBodyElement extends GameObject {
     }
 
     @Override
+    public void setPosition(Point newPosition) {
+
+    }
+
+    @Override
     public Point getPosition() {
         return new Point(x, y);
+    }
+
+    @Override
+    public Rectangle getBounds() {
+        return new Rectangle(this.x, this.y, GameConstants.SNAKE_ELEMENT_SIZE, GameConstants.SNAKE_ELEMENT_SIZE);
     }
 }

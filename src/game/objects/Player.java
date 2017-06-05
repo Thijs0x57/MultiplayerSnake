@@ -10,8 +10,8 @@ import java.awt.*;
 public class Player {
     private Snake _snake;
 
-    public Player() {
-        _snake = new Snake(this, new Point(40 * GameConstants.SNAKE_ELEMENT_SIZE, 20 * GameConstants.SNAKE_ELEMENT_SIZE), 5);
+    public Player(Point snakeStartPosition) {
+        _snake = new Snake(this, new Point(snakeStartPosition.x * GameConstants.SNAKE_ELEMENT_SIZE, snakeStartPosition.y * GameConstants.SNAKE_ELEMENT_SIZE), 5);
     }
 
     public Snake getSnake() {
