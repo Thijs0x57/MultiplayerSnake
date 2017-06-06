@@ -8,6 +8,7 @@ import java.awt.*;
  */
 public class Main
 {
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Multiplayer Snake");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);

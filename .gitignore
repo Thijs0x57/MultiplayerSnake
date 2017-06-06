@@ -1,7 +1,7 @@
 # Compiled class file
 *.class
 
-# Log file
+# BeginFrame file
 *.log
 
 # BlueJ files
