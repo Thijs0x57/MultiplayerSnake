@@ -93,6 +93,9 @@ public class GamePanel extends JPanel implements ActionListener{
                                     _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 }
                                 break;
+                            case KeyEvent.VK_NUM_LOCK:
+                                _player.getSnake().addBodyElement();
+                                        //add shit here
                         }
                     }
 
