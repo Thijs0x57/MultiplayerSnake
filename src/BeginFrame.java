@@ -1,6 +1,7 @@
 import game.GamePanel;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.*;
 
 public class BeginFrame extends JFrame {
@@ -42,9 +43,16 @@ public class BeginFrame extends JFrame {
             public void actionPerformed(ActionEvent e)
             {
                 String [] args = {"client", "53436", "127.0.0.1"};
-                GamePanel gamePanel = new GamePanel(args);
-                gamePanel.setVisible(true);
+                JFrame frame = new JFrame("Multiplayer Snake");
+                frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                frame.setContentPane(new GamePanel(args));
                 dispose();
+                frame.setMinimumSize(new Dimension(800, 608));
+                frame.setMaximumSize(new Dimension(800, 608));
+                frame.setResizable(false);
+                frame.pack();
+                frame.setVisible(true);
+
             }
         });
 
@@ -54,8 +62,15 @@ public class BeginFrame extends JFrame {
             public void actionPerformed(ActionEvent e)
             {
                 String [] args = {"server", "53436"};
-                GamePanel gamePanel = new GamePanel(args);
-                gamePanel.setVisible(true);
+                JFrame frame = new JFrame("Multiplayer Snake");
+                frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                frame.setContentPane(new GamePanel(args));
+                frame.setMinimumSize(new Dimension(800, 608));
+                frame.setMaximumSize(new Dimension(800, 608));
+                frame.setResizable(false);
+
+                frame.pack();
+                frame.setVisible(true);
                 dispose();
             }
         });
