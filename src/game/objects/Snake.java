@@ -41,6 +41,11 @@ public class Snake extends GameObject {
         Iterator<SnakeBodyElement> it = _snakeBody.iterator();
         for(int i = 0; i < _snakeBody.size(); i++) {
             if(it.hasNext()) {
+                SnakeBodyElement e = it.next();
+
+                g.setColor(Color.white);
+                g.drawString(i + 1 + "", e.x, e.y);
+
                 if (i == 0) {
                     g.setColor(GameConstants.SNAKE_HEAD_COLOR);
                 } else {
@@ -51,8 +56,6 @@ public class Snake extends GameObject {
                     }
 
                 }
-
-                SnakeBodyElement e = it.next();
 
                 g.fillRect(e.x, e.y, GameConstants.SNAKE_ELEMENT_SIZE, GameConstants.SNAKE_ELEMENT_SIZE);
                 g.setColor(Color.BLACK);
@@ -111,6 +114,10 @@ public class Snake extends GameObject {
         }
     }
 
+    public Direction getDirection() {
+        return _snakeDirection;
+    }
+
     @Override
     public void setPosition(Point newPosition) {
         _snakePosition = newPosition;
@@ -140,27 +147,33 @@ public class Snake extends GameObject {
 
     @Override
     public boolean hasCollision(GameObject otherGameObject) {
+        // Check collsion with other snake
         if(otherGameObject instanceof Snake && otherGameObject != this) {
             Rectangle headBounds = _snakeBody.get(0).getBounds();
             Rectangle otherSnakeHeadBounds = otherGameObject.getBounds();
 
+            // Head-on-head collision
             if (headBounds.intersects(otherSnakeHeadBounds)) {
                 return true;
             } else {
+                // Head-on-body collision
                 for(SnakeBodyElement sbe : ((Snake) otherGameObject)._snakeBody) {
                     if(headBounds.intersects(sbe.getBounds())) {
                         return true;
                     }
                 }
             }
-//        } else if (otherGameObject instanceof Snake) {
-//            Rectangle headBounds = _snakeBody.get(0).getBounds();
-//
-//            for (int i = 1; i < _snakeBody.size(); i++) {
-//                if(headBounds.intersects(_snakeBody.get(0).getBounds())) {
-//                    return true;
-//                }
-//            }
+            // Check collision with body of self
+        } else if (otherGameObject instanceof Snake && otherGameObject == this) {
+            Rectangle headBounds = _snakeBody.get(0).getBounds();
+
+            if(((Snake)otherGameObject).getDirection() != Direction.NONE) {
+                for (int i = 1; i < _snakeBody.size(); i++) {
+                    if (headBounds.intersects(_snakeBody.get(i).getBounds())) {
+                        return true;
+                    }
+                }
+            }
         } else if (otherGameObject instanceof Apple) {
             Rectangle headBounds = _snakeBody.get(0).getBounds();
             Rectangle appleBounds = otherGameObject.getBounds();
