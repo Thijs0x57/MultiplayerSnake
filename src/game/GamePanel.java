@@ -57,6 +57,7 @@ public class GamePanel extends JPanel implements ActionListener{
                                     _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 } else if (_isClient) {
                                     _snakeClient.sendMessageInt(MessageType.KEYS, Direction.UP.ordinal());
+                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 }
                                 break;
                             case KeyEvent.VK_DOWN:
@@ -67,6 +68,7 @@ public class GamePanel extends JPanel implements ActionListener{
                                     _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 } else if (_isClient) {
                                     _snakeClient.sendMessageInt(MessageType.KEYS, Direction.DOWN.ordinal());
+                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 }
                                 break;
                             case KeyEvent.VK_LEFT:
@@ -74,8 +76,10 @@ public class GamePanel extends JPanel implements ActionListener{
 
                                 if (_isHost) {
                                     _snakeServer.sendMessageInt(MessageType.KEYS, Direction.LEFT.ordinal());
+                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 } else if (_isClient) {
                                     _snakeClient.sendMessageInt(MessageType.KEYS, Direction.LEFT.ordinal());
+                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 }
                                 break;
                             case KeyEvent.VK_RIGHT:
@@ -83,8 +87,10 @@ public class GamePanel extends JPanel implements ActionListener{
 
                                 if (_isHost) {
                                     _snakeServer.sendMessageInt(MessageType.KEYS, Direction.RIGHT.ordinal());
+                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 } else if (_isClient) {
                                     _snakeClient.sendMessageInt(MessageType.KEYS, Direction.RIGHT.ordinal());
+                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
                                 }
                                 break;
                         }
