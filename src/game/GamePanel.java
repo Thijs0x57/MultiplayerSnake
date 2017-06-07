@@ -95,7 +95,6 @@ public class GamePanel extends JPanel implements ActionListener{
                                 break;
                             case KeyEvent.VK_NUM_LOCK:
                                 _player.getSnake().addBodyElement();
-                                        //add shit here
                         }
                     }
 
