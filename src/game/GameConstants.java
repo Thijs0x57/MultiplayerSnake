@@ -16,7 +16,9 @@ public class GameConstants {
 
     public static Color PROTECTION_COLOR = Color.YELLOW;
 
-    public static int GAME_SPEED = 13;
+
+    public static int GAME_DRAW_INTERVAL = 60;
+    public static int GAME_UPDATE_INTERVAL = 60;
 
     public static int APPLE_SPAWN_RATE = 65;
 

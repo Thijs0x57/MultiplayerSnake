@@ -3,9 +3,7 @@ package Network;
 import Network.Callbacks.*;
 
 import java.awt.*;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -52,26 +50,10 @@ public class Server {
 
                     System.out.println("New connection from: " + newConnection.getInetAddress().getHostAddress());
 
-                    _serverDataInputStream = new DataInputStream(newConnection.getInputStream());
-                    _serverDataOutputStream = new DataOutputStream(newConnection.getOutputStream());
+                    _serverDataInputStream = new DataInputStream(new BufferedInputStream(newConnection.getInputStream()));
+                    _serverDataOutputStream = new DataOutputStream(new BufferedOutputStream(newConnection.getOutputStream()));
 
                     _connectedSockets.add(newConnection);
-                }
-
-                while(true) {
-                    MessageType messageType = MessageType.values()[_serverDataInputStream.read()];
-
-                    switch(messageType) {
-                        case KEYS:
-                            _keyPressReceived.onKeyPressReceived(_serverDataInputStream.readInt());
-                            break;
-                        case POSITION:
-                            String data = _serverDataInputStream.readUTF();
-                            int x = Integer.parseInt(data.split(":")[0]);
-                            int y = Integer.parseInt(data.split(":")[1]);
-                            _positionChangedReceived.onPositionChanged(new Point(x, y));
-                            break;
-                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -79,6 +61,10 @@ public class Server {
         };
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
+    }
+
+    public DataInputStream getReadStream() {
+        return _serverDataInputStream;
     }
 
     public void sendMessage(MessageType messageType, String message) throws IOException {

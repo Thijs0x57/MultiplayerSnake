@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Created by Michel on 5-6-2017.
  */
-public class GamePanel extends JPanel implements ActionListener{
+public class GamePanel extends JPanel implements ActionListener {
     private CopyOnWriteArrayList<GameObject> _gameObjects;
 
     private Player _player;
@@ -35,7 +35,7 @@ public class GamePanel extends JPanel implements ActionListener{
 
     private int _spawnAppleCounter;
 
-    long lastLoopTime = System.currentTimeMillis();
+    private boolean _isRunning;
 
     public GamePanel(String[] startupArgs) {
         setBackground(Color.black);
@@ -44,62 +44,25 @@ public class GamePanel extends JPanel implements ActionListener{
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                try {
-                    Snake snake = _player.getSnake();
+                Snake snake = _player.getSnake();
 
-                    if (snake != null) {
-                        switch (e.getKeyCode()) {
-                            case KeyEvent.VK_UP:
-                                snake.setDirection(Direction.UP);
-
-                                if (_isHost) {
-                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.UP.ordinal());
-                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                } else if (_isClient) {
-                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.UP.ordinal());
-                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                }
-                                break;
-                            case KeyEvent.VK_DOWN:
-                                snake.setDirection(Direction.DOWN);
-
-                                if (_isHost) {
-                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.DOWN.ordinal());
-                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                } else if (_isClient) {
-                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.DOWN.ordinal());
-                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                }
-                                break;
-                            case KeyEvent.VK_LEFT:
-                                snake.setDirection(Direction.LEFT);
-
-                                if (_isHost) {
-                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.LEFT.ordinal());
-                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                } else if (_isClient) {
-                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.LEFT.ordinal());
-                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                }
-                                break;
-                            case KeyEvent.VK_RIGHT:
-                                snake.setDirection(Direction.RIGHT);
-
-                                if (_isHost) {
-                                    _snakeServer.sendMessageInt(MessageType.KEYS, Direction.RIGHT.ordinal());
-                                    _snakeServer.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                } else if (_isClient) {
-                                    _snakeClient.sendMessageInt(MessageType.KEYS, Direction.RIGHT.ordinal());
-                                    _snakeClient.sendMessage(MessageType.POSITION, snake.getPosition().x + ":" + snake.getPosition().y);
-                                }
-                                break;
-                            case KeyEvent.VK_NUM_LOCK:
-                                _player.getSnake().addBodyElement();
-                        }
+                if (snake != null) {
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_UP:
+                            snake.setDirection(Direction.UP);
+                            break;
+                        case KeyEvent.VK_DOWN:
+                            snake.setDirection(Direction.DOWN);
+                            break;
+                        case KeyEvent.VK_LEFT:
+                            snake.setDirection(Direction.LEFT);
+                            break;
+                        case KeyEvent.VK_RIGHT:
+                            snake.setDirection(Direction.RIGHT);
+                            break;
+                        case KeyEvent.VK_NUM_LOCK:
+                            _player.getSnake().addBodyElement();
                     }
-
-                } catch (IOException e1) {
-                    e1.printStackTrace();
                 }
             }
         });
@@ -116,8 +79,7 @@ public class GamePanel extends JPanel implements ActionListener{
                     hostGame(Integer.parseInt(startupArgs[1]));
                 }
             }
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -126,15 +88,15 @@ public class GamePanel extends JPanel implements ActionListener{
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D)g;
+        Graphics2D g2d = (Graphics2D) g;
 
         Iterator<GameObject> it = _gameObjects.iterator();
-        for(int i = 0; i < _gameObjects.size(); i++) {
-            if(it.hasNext()) {
+        for (int i = 0; i < _gameObjects.size(); i++) {
+            if (it.hasNext()) {
                 GameObject go = it.next();
 
-                if(go instanceof Snake) {
-                    Snake snake = (Snake)go;
+                if (go instanceof Snake) {
+                    Snake snake = (Snake) go;
 
                     if (snake.getPosition().x < 0) {
                         snake.setPosition(new Point(getWidth(), snake.getPosition().y));
@@ -145,8 +107,8 @@ public class GamePanel extends JPanel implements ActionListener{
                     } else if (snake.getPosition().y > getHeight()) {
                         snake.setPosition(new Point(snake.getPosition().x, 0));
                     }
-                } else if(go instanceof Apple) {
-                    Apple apple = (Apple)go;
+                } else if (go instanceof Apple) {
+                    Apple apple = (Apple) go;
                 }
 
                 go.draw(g2d);
@@ -156,61 +118,94 @@ public class GamePanel extends JPanel implements ActionListener{
         g2d.setColor(Color.white);
         g2d.drawString("Your Lives: " + _player.getSnake().getBodyCount(), 10, 10);
         g2d.drawString("Other Lives: " + _enemyPlayer.getSnake().getBodyCount(), 10, 20);
+        if(_isHost)
+            g2d.drawString("SERVER", 10, 30);
+        else
+            g2d.drawString("CLIENT", 10, 30);
     }
+
+    long lastTime = System.currentTimeMillis();
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        update();
+        long time = System.currentTimeMillis();
+        if (time - lastTime > 1000) {
+            lastTime = time;  // we're too far behind, catch up
+        }
+        int updatesNeeded = (int) ((time - lastTime) / GameConstants.GAME_UPDATE_INTERVAL);
+        for (int i = 0; i < updatesNeeded; i++) {
+            update();
+            lastTime += GameConstants.GAME_UPDATE_INTERVAL;
+        }
         repaint();
+        // ... sleep until next frame ...
     }
 
     public synchronized void update() {
-        if(_isHost) {
-            if (_spawnAppleCounter < GameConstants.APPLE_SPAWN_RATE) {
-                _spawnAppleCounter++;
-            } else {
-                // https://stackoverflow.com/a/363692/3677161
-                int x = ThreadLocalRandom.current().nextInt(0, getWidth() + 1);
-                int y = ThreadLocalRandom.current().nextInt(0, getHeight() + 1);
-
-                _gameObjects.add(new Apple(new Point(x, y)));
-                _spawnAppleCounter = 0;
-
-                try {
-                    _snakeServer.sendMessage(MessageType.APPLE_SPAWN, x + ":" + y);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        // Collision checking
-        Iterator<GameObject> itcc = _gameObjects.iterator();
-        for(int i = 0; i < _gameObjects.size(); i++) {
-            if(itcc.hasNext()) {
-                GameObject go = itcc.next();
-
-                if(go instanceof Snake) {
-                    checkCollision(go);
-                }
-            }
-        }
-
-        // Update game objects
-        Iterator<GameObject> itup = _gameObjects.iterator();
-        for(int i = 0; i < _gameObjects.size(); i++) {
-            if(itup.hasNext()) {
-                itup.next().update();
-            }
-        }
-
         try {
-        if(_isHost)
-            if(_snakeServer != null && _player != null)
+            System.out.println("Game won/lost/draw check");
+            if (_player.getSnake().compareTo(_enemyPlayer.getSnake()) > 0) {
+                // Player 1 win
+            } else if (_enemyPlayer.getSnake().compareTo(_player.getSnake()) < 0) {
+                // Player 2 win
+            } else {
+                // Draw
+            }
+
+
+            if (_isHost) {
+                System.out.println("Apple spawn check");
+                if (_spawnAppleCounter < GameConstants.APPLE_SPAWN_RATE) {
+                    _spawnAppleCounter++;
+                } else {
+                    // https://stackoverflow.com/a/363692/3677161
+                    int x = ThreadLocalRandom.current().nextInt(0, getWidth() + 1);
+                    int y = ThreadLocalRandom.current().nextInt(0, getHeight() + 1);
+
+                    _gameObjects.add(new Apple(new Point(x, y)));
+                    _spawnAppleCounter = 0;
+
+                    _snakeServer.sendMessage(MessageType.APPLE_SPAWN, x + ":" + y);
+                }
+            }
+
+            System.out.println("Collision checking check");
+            // Collision checking
+            Iterator<GameObject> itcc = _gameObjects.iterator();
+            for (int i = 0; i < _gameObjects.size(); i++) {
+                if (itcc.hasNext()) {
+                    GameObject go = itcc.next();
+
+                    if(go instanceof Snake)
+                        checkCollision(go);
+                }
+            }
+
+            if (_isClient && _snakeClient != null && _snakeClient.getReadStream() != null) {
+                System.out.println("Send snake position to client check");
+                _snakeClient.sendMessage(MessageType.POSITION, _player.getSnake().getPosition().x + ":" + _player.getSnake().getPosition().y);
+                System.out.println("Handle incoming server messages check");
+                handleIncomingServerMessages();
+            }
+
+
+            if (_isHost && _snakeServer != null && _snakeServer.getReadStream() != null) {
+                System.out.println("Send snake position to server check");
                 _snakeServer.sendMessage(MessageType.POSITION, _player.getSnake().getPosition().x + ":" + _player.getSnake().getPosition().y);
-        else if (_isClient)
-            if(_snakeClient != null && _player != null)
-                _snakeServer.sendMessage(MessageType.POSITION, _player.getSnake().getPosition().x + ":" + _player.getSnake().getPosition().y);
+                System.out.println("Handle incoming client messages check");
+                handleIncomingClientMessages();
+            }
+
+
+
+            System.out.println("Update game objects check");
+            // Update game objects
+            Iterator<GameObject> itup = _gameObjects.iterator();
+            for (int i = 0; i < _gameObjects.size(); i++) {
+                if (itup.hasNext()) {
+                    itup.next().update();
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -242,32 +237,19 @@ public class GamePanel extends JPanel implements ActionListener{
     public void hostGame(int port) throws IOException {
         _snakeServer = new Server(port);
         _snakeServer.start();
-        _snakeServer.onKeyPressReceived(key -> {
-            Direction direction = Direction.values()[key];
-            handleEnemyDirection(direction);
-        });
-        _snakeServer.onPositionChanged(position -> {
-            _enemyPlayer.getSnake().setPosition(position);
-        });
 
         _isHost = true;
+
+        System.out.println("SERVER");
     }
 
     public void joinGame(int port, String address) throws IOException {
         _snakeClient = new Client(address, port);
         _snakeClient.start();
-        _snakeClient.onKeyPressReceived(key -> {
-            Direction direction = Direction.values()[key];
-            handleEnemyDirection(direction);
-        });
-        _snakeClient.onPositionChanged(position -> {
-            _enemyPlayer.getSnake().setPosition(position);
-        });
-        _snakeClient.onAppleSpawned((x, y) -> {
-            _gameObjects.add(new Apple(new Point(x, y)));
-        });
 
         _isClient = true;
+
+        System.out.println("CLIENT");
     }
 
     public void initGame() {
@@ -276,12 +258,12 @@ public class GamePanel extends JPanel implements ActionListener{
         Point hostSpawn = new Point(40, 17);
         Point clientSpawn = new Point(9, 17);
 
-        if(_isHost) {
+        if (_isHost) {
             _player = new Player(hostSpawn);
             _enemyPlayer = new Player(clientSpawn);
         }
 
-        if(_isClient) {
+        if (_isClient) {
             _player = new Player(clientSpawn);
             _enemyPlayer = new Player(hostSpawn);
         }
@@ -292,24 +274,44 @@ public class GamePanel extends JPanel implements ActionListener{
         _spawnAppleCounter = 0;
 
         // Game speed
-        _gameLoopTimer = new Timer(1000 / GameConstants.GAME_SPEED, this);
+        _gameLoopTimer = new Timer(1000 / 60, this);
         _gameLoopTimer.start();
+
+        //gameLoop();
     }
 
-    private void handleEnemyDirection(Direction direction) {
-        switch (direction)
-        {
-            case UP:
-                _enemyPlayer.getSnake().setDirection(direction);
+    private void handleIncomingClientMessages() throws IOException {
+        MessageType messageType = MessageType.values()[_snakeServer.getReadStream().read()];
+        switch (messageType) {
+            case KEYS:
+                _enemyPlayer.getSnake().setDirection(Direction.values()[_snakeServer.getReadStream().readInt()]);
                 break;
-            case DOWN:
-                _enemyPlayer.getSnake().setDirection(direction);
+            case POSITION:
+                String data = _snakeServer.getReadStream().readUTF();
+                int x = Integer.parseInt(data.split(":")[0]);
+                int y = Integer.parseInt(data.split(":")[1]);
+                _enemyPlayer.getSnake().setPosition(new Point(x, y));
                 break;
-            case LEFT:
-                _enemyPlayer.getSnake().setDirection(direction);
+        }
+    }
+
+    private void handleIncomingServerMessages() throws IOException {
+        MessageType messageType = MessageType.values()[_snakeClient.getReadStream().read()];
+        switch (messageType) {
+            case KEYS:
+                _enemyPlayer.getSnake().setDirection(Direction.values()[_snakeClient.getReadStream().readInt()]);
                 break;
-            case RIGHT:
-                _enemyPlayer.getSnake().setDirection(direction);
+            case POSITION:
+                String data = _snakeClient.getReadStream().readUTF();
+                int x = Integer.parseInt(data.split(":")[0]);
+                int y = Integer.parseInt(data.split(":")[1]);
+                _enemyPlayer.getSnake().setPosition(new Point(x, y));
+                break;
+            case APPLE_SPAWN:
+                String appleData = _snakeClient.getReadStream().readUTF();
+                int appX = Integer.parseInt(appleData.split(":")[0]);
+                int appY = Integer.parseInt(appleData.split(":")[1]);
+                _gameObjects.add(new Apple(new Point(appX, appY)));
                 break;
         }
     }

@@ -1,5 +1,6 @@
 package game.objects;
 
+import Network.MessageType;
 import game.GameConstants;
 
 import java.awt.*;
@@ -9,7 +10,7 @@ import java.util.LinkedList;
 /**
  * Created by Michel on 5-6-2017.
  */
-public class Snake extends GameObject {
+public class Snake extends GameObject implements Comparable<Snake> {
     private LinkedList<SnakeBodyElement> _snakeBody;
     private Point _snakePosition;
     private Direction _snakeDirection;
@@ -197,4 +198,16 @@ public class Snake extends GameObject {
     public int getBodyCount() {
         return _snakeBody.size();
     }
+
+    @Override
+    public int compareTo(Snake snake) {
+        if(getBodyCount() > snake.getBodyCount())
+            return 1;
+        else if (getBodyCount() < snake.getBodyCount())
+            return -1;
+        else
+            return 0;
+    }
+
+
 }
